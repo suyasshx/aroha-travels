@@ -2,80 +2,90 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Compass, Menu, X, Phone, ShieldCheck } from "lucide-react";
+import { Compass, Menu, X, ArrowUpRight, ShieldCheck } from "lucide-react";
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-[#FAF9F6]/90 backdrop-blur-md border-b border-[#E9E1D5]/60 transition-all">
+    <header className="sticky top-0 z-50 bg-[#FAF9F6]/95 backdrop-blur-md border-b border-[#E9E1D5] transition-all">
+      {/* Top Editorial Bar */}
+      <div className="hidden lg:block border-b border-[#E9E1D5]/60 bg-[#FAF9F6] text-[10px] tracking-[0.2em] text-[#6a7d61] uppercase py-1.5 px-6 sm:px-8">
+        <div className="max-w-7xl mx-auto flex items-center justify-between font-mono">
+          <span>KERALA & SOUTH INDIA EXPEDITIONS · EST. 2024</span>
+          <div className="flex items-center gap-6">
+            <span>BOUTIQUE RESORTS · PRIVATE KETTUVALLAMS · HERITAGE RETREATS</span>
+            <span className="text-[#173D32] font-semibold">DPDP ACT 2023 COMPLIANT</span>
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-          {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-full bg-[#173D32] flex items-center justify-center text-[#FAF9F6] shadow-sm group-hover:scale-105 transition-transform">
-              <Compass className="w-5 h-5 stroke-[1.8]" />
+          {/* Brand Masthead */}
+          <Link href="/" className="flex items-center gap-3.5 group">
+            <div className="w-10 h-10 rounded-full border border-[#173D32] bg-[#FAF9F6] group-hover:bg-[#173D32] flex items-center justify-center text-[#173D32] group-hover:text-[#FAF9F6] transition-all duration-300">
+              <Compass className="w-5 h-5 stroke-[1.75]" />
             </div>
-            <div>
-              <span className="font-serif text-xl sm:text-2xl font-bold tracking-wider text-[#173D32] block">
+            <div className="flex flex-col">
+              <span className="font-serif text-2xl sm:text-2xl font-bold tracking-[0.18em] text-[#173D32] leading-none">
                 AROHA
               </span>
-              <span className="text-[10px] uppercase tracking-widest text-[#6a7d61] block -mt-1 font-medium">
+              <span className="text-[9px] uppercase tracking-[0.25em] text-[#6a7d61] font-mono mt-1">
                 South India Experiences
               </span>
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#252925]">
+          {/* Editorial Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-8 lg:gap-10 text-xs font-medium tracking-[0.12em] uppercase text-[#252925]">
             <Link
               href="/packages"
-              className="hover:text-[#173D32] transition-colors py-1 relative after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-[2px] after:bg-[#173D32] after:transition-all"
+              className="hover:text-[#173D32] transition-colors py-1 relative after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-[1.5px] after:bg-[#173D32] after:transition-all"
             >
+              <span className="font-serif italic lowercase text-[11px] text-[#6a7d61] mr-1.5">i.</span>
               Curated Journeys
             </Link>
             <Link
               href="/packages?dest=kerala"
-              className="hover:text-[#173D32] transition-colors py-1"
+              className="hover:text-[#173D32] transition-colors py-1 relative after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-[1.5px] after:bg-[#173D32] after:transition-all"
             >
-              Kerala
+              <span className="font-serif italic lowercase text-[11px] text-[#6a7d61] mr-1.5">ii.</span>
+              Kerala Highlands & Coast
             </Link>
             <Link
-              href="/packages?dest=tamilnadu"
-              className="hover:text-[#173D32] transition-colors py-1"
+              href="/#manifesto"
+              className="hover:text-[#173D32] transition-colors py-1 relative after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-[1.5px] after:bg-[#173D32] after:transition-all"
             >
-              Tamil Nadu
-            </Link>
-            <Link
-              href="/#why-us"
-              className="hover:text-[#173D32] transition-colors py-1"
-            >
-              The Aroha Difference
+              <span className="font-serif italic lowercase text-[11px] text-[#6a7d61] mr-1.5">iii.</span>
+              The Atelier
             </Link>
             <Link
               href="/#editorial"
-              className="hover:text-[#173D32] transition-colors py-1"
+              className="hover:text-[#173D32] transition-colors py-1 relative after:absolute after:bottom-0 after:left-0 after:w-0 hover:after:w-full after:h-[1.5px] after:bg-[#173D32] after:transition-all"
             >
-              Stories & Guides
+              <span className="font-serif italic lowercase text-[11px] text-[#6a7d61] mr-1.5">iv.</span>
+              Field Notes
             </Link>
           </nav>
 
           {/* Action CTAs */}
-          <div className="hidden lg:flex items-center gap-4">
+          <div className="hidden lg:flex items-center gap-5">
             <Link
               href="/admin"
-              className="text-xs px-3 py-1.5 rounded-full border border-[#A9B8A2]/60 text-[#173D32] hover:bg-[#A9B8A2]/20 flex items-center gap-1.5 transition-colors"
+              className="text-[11px] uppercase tracking-wider text-[#6a7d61] hover:text-[#173D32] flex items-center gap-1.5 py-1 transition-colors"
               title="Staff Operations Portal"
             >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Staff CMS</span>
+              <ShieldCheck className="w-3.5 h-3.5 text-[#173D32]" />
+              <span>Staff Desk</span>
             </Link>
 
             <Link
-              href="/packages"
-              className="bg-[#173D32] hover:bg-[#215143] text-[#FAF9F6] px-5 py-2.5 rounded-full text-xs font-semibold tracking-wide uppercase shadow-sm transition-all hover:shadow"
+              href="/#enquire"
+              className="bg-[#173D32] hover:bg-[#215143] text-[#FAF9F6] px-5 py-2.5 rounded-full text-[11px] font-semibold tracking-[0.15em] uppercase transition-all duration-200 flex items-center gap-2 shadow-sm"
             >
-              Plan Your Journey
+              <span>Bespoke Enquiry</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
@@ -101,50 +111,53 @@ export default function Header() {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-[#E9E1D5] bg-[#FAF9F6] px-6 py-6 space-y-4">
-          <Link
-            href="/packages"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block text-base font-medium text-[#173D32] py-2 border-b border-[#E9E1D5]/50"
-          >
-            Curated Journeys
-          </Link>
-          <Link
-            href="/packages?dest=kerala"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block text-base font-medium text-[#252925] py-2 border-b border-[#E9E1D5]/50"
-          >
-            Kerala Experiences
-          </Link>
-          <Link
-            href="/packages?dest=tamilnadu"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block text-base font-medium text-[#252925] py-2 border-b border-[#E9E1D5]/50"
-          >
-            Tamil Nadu Heritage
-          </Link>
-          <Link
-            href="/#why-us"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block text-base font-medium text-[#252925] py-2 border-b border-[#E9E1D5]/50"
-          >
-            The Aroha Difference
-          </Link>
-          <div className="pt-2 flex flex-col gap-3">
+        <div className="md:hidden border-t border-[#E9E1D5] bg-[#FAF9F6] px-6 py-6 space-y-4">
+          <div className="space-y-3 text-sm tracking-wider uppercase">
             <Link
               href="/packages"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full bg-[#173D32] text-[#FAF9F6] py-3 rounded-full text-center text-sm font-semibold tracking-wide uppercase"
+              className="block py-2 text-[#252925] hover:text-[#173D32]"
             >
-              Explore All Journeys
+              Curated Journeys
             </Link>
+            <Link
+              href="/packages?dest=kerala"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-2 text-[#252925] hover:text-[#173D32]"
+            >
+              Kerala Circuits
+            </Link>
+            <Link
+              href="/#manifesto"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-2 text-[#252925] hover:text-[#173D32]"
+            >
+              The Atelier
+            </Link>
+            <Link
+              href="/#editorial"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-2 text-[#252925] hover:text-[#173D32]"
+            >
+              Field Notes
+            </Link>
+          </div>
+
+          <div className="pt-4 border-t border-[#E9E1D5] space-y-3">
             <Link
               href="/admin"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full border border-[#173D32] text-[#173D32] py-2.5 rounded-full text-center text-xs font-semibold flex items-center justify-center gap-1.5"
+              className="flex items-center gap-2 text-xs uppercase tracking-wider text-[#6a7d61]"
             >
               <ShieldCheck className="w-4 h-4" />
-              Staff Login & Management CMS
+              <span>Staff Operations CMS</span>
+            </Link>
+            <Link
+              href="/#enquire"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block text-center bg-[#173D32] text-[#FAF9F6] py-3 rounded-full text-xs uppercase tracking-widest font-semibold"
+            >
+              Bespoke Enquiry
             </Link>
           </div>
         </div>
@@ -152,4 +165,3 @@ export default function Header() {
     </header>
   );
 }
-
