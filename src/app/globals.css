@@ -1,24 +1,66 @@
 @import "tailwindcss";
 
-@theme {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --ivory: #FAF9F6;
+    --forest: #173D32;
+    --forest-light: #215143;
+    --forest-dark: #0f2720;
+    --sage: #A9B8A2;
+    --sage-light: #d6ded2;
+    --charcoal: #252925;
+    --sand: #E9E1D5;
+    --sand-light: #f5f1eb;
+    --gold: #C5A059;
+    --terracotta: #C16B4D;
+    --white: #FFFFFF;
+    
+    --background: #FAF9F6;
+    --foreground: #252925;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, .font-serif {
+    font-family: var(--font-serif), Georgia, serif;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+/* Custom Aroha Design Utilities */
+.bg-ivory { background-color: #FAF9F6; }
+.bg-forest { background-color: #173D32; }
+.bg-forest-light { background-color: #215143; }
+.bg-forest-dark { background-color: #0f2720; }
+.bg-sage { background-color: #A9B8A2; }
+.bg-sage-light { background-color: #e9eee6; }
+.bg-sand { background-color: #E9E1D5; }
+.bg-sand-light { background-color: #f6f3ee; }
+
+.text-ivory { color: #FAF9F6; }
+.text-forest { color: #173D32; }
+.text-forest-light { color: #215143; }
+.text-sage { color: #6a7d61; }
+.text-charcoal { color: #252925; }
+.text-sand { color: #9c8e7b; }
+.text-gold { color: #C5A059; }
+.text-terracotta { color: #C16B4D; }
+
+.border-forest { border-color: #173D32; }
+.border-sage { border-color: #A9B8A2; }
+.border-sand { border-color: #E9E1D5; }
+.border-ivory { border-color: #FAF9F6; }
+
+/* Subtle elevation and transitions */
+.card-hover {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px -10px rgba(23, 61, 50, 0.08);
 }

@@ -1,0 +1,198 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  TRAVELLER
+  STAFF_ADMIN
+}
+
+enum PackageStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum EnquiryStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  QUOTATION_SENT
+  CONVERTED
+  LOST
+}
+
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  role         UserRole      @default(TRAVELLER)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  enquiryNotes EnquiryNote[]
+  activityLogs ActivityLog[]
+
+  @@map("users")
+}
+
+model Package {
+  id              String           @id @default(uuid())
+  packageCode     String           @unique // e.g. "PKG-KL-07"
+  slug            String           @unique
+  title           String
+  destination     String           // e.g. "Kerala", "Munnar, Thekkady & Alleppey"
+  duration        String           // e.g. "6 Days / 5 Nights"
+  description     String           @db.Text
+  status          PackageStatus    @default(DRAFT)
+  heroImage       String           @db.Text
+  featured        Boolean          @default(false)
+  bestTimeToVisit String?
+  inclusions      String[]         // Array of strings
+  exclusions      String[]         // Array of strings
+  gallery         String[]         // Array of image URLs
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  seasonalPrices  SeasonalPrice[]
+  itineraryDays   ItineraryDay[]
+  hotels          Hotel[]
+  versions        PackageVersion[]
+
+  @@map("packages")
+}
+
+model SeasonalPrice {
+  id             String   @id @default(uuid())
+  packageId      String
+  package        Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  seasonName     String   // e.g. "Peak Season", "Monsoon"
+  startDate      DateTime
+  endDate        DateTime
+  pricePerPerson Float    // Starting from price per person
+  hotelCategory  String   // e.g. "4-Star Deluxe", "3-Star Standard"
+  gstDetails     String   @default("GST as applicable (5%)")
+  sharingBasis   String   @default("Twin Sharing Basis")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("seasonal_prices")
+}
+
+model ItineraryDay {
+  id          String   @id @default(uuid())
+  packageId   String
+  package     Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  dayNumber   Int
+  title       String
+  description String   @db.Text
+  activities  String[] // Array of activity bullet points
+  stay        String?  // Hotel / Houseboat details for the night
+  meals       String?  // e.g. "Breakfast, Dinner"
+
+  @@map("itinerary_days")
+}
+
+model Hotel {
+  id        String  @id @default(uuid())
+  packageId String
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  name      String
+  category  String  // e.g. "4-Star", "3-Star", "Heritage Resort"
+  location  String  // e.g. "Munnar", "Alleppey"
+  roomType  String?
+
+  @@map("hotels")
+}
+
+model PackageVersion {
+  id            String   @id @default(uuid())
+  packageId     String
+  package       Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  versionNumber Int
+  snapshot      Json     // Full snapshot of package, seasonalPrices, itinerary, hotels
+  changeSummary String   @db.Text
+  updatedBy     String   // Staff name or email
+  createdAt     DateTime @default(now())
+
+  @@unique([packageId, versionNumber])
+  @@map("package_versions")
+}
+
+model Enquiry {
+  id                     String         @id @default(uuid())
+  enquiryNumber          String         @unique // e.g. "ENQ-2026-001"
+  customerName           String
+  email                  String
+  phone                  String
+  destination            String
+  travelStartDate        DateTime?
+  travelEndDate          DateTime?
+  duration               String?
+  adults                 Int            @default(2)
+  children               Int            @default(0)
+  budget                 Float?
+  specialRequirements    String?        @db.Text
+  originalMessage        String         @db.Text
+  preferredContactMethod String         @default("EMAIL") // EMAIL, PHONE, WHATSAPP
+  whatsappConsent        Boolean        @default(false)
+  status                 EnquiryStatus  @default(NEW)
+  priority               String         @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  assignedTo             String?        // Staff consultant name or email
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+
+  aiExtraction           AIExtraction?
+  notes                  EnquiryNote[]
+
+  @@map("enquiries")
+}
+
+model AIExtraction {
+  id              String   @id @default(uuid())
+  enquiryId       String   @unique
+  enquiry         Enquiry  @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  extractedData   Json     // destination, adults, children, duration, travel_month, budget, special_requirements, confidence
+  confidence      Float    @default(0.9)
+  recommendations Json     // Array of matching packages with matched seasonal price and reason
+  replyDraft      String   @db.Text
+  approved        Boolean  @default(false)
+  provider        String   @default("gemini-1.5-flash") // or "rule-based-fallback"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("ai_extractions")
+}
+
+model EnquiryNote {
+  id         String   @id @default(uuid())
+  enquiryId  String
+  enquiry    Enquiry  @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  authorName String   @default("Travel Specialist")
+  note       String   @db.Text
+  createdAt  DateTime @default(now())
+
+  @@map("enquiry_notes")
+}
+
+model ActivityLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userName   String?
+  action     String   // e.g. "PACKAGE_CREATED", "STATUS_UPDATED", "AI_APPROVED"
+  entityType String   // "PACKAGE", "ENQUIRY", "VERSION"
+  entityId   String
+  details    String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  @@map("activity_logs")
+}
+
