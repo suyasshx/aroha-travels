@@ -28,6 +28,12 @@ export function checkRateLimit(
 } {
   const now = Date.now();
 
+  // In local development server, provide a generous threshold (100) for localhost to prevent developer lockout
+  const isDevLocalhost =
+    (key === "127.0.0.1" || key === "::1" || key === "localhost" || key === "unknown") &&
+    process.env.NODE_ENV === "development";
+  const effectiveMax = isDevLocalhost ? Math.max(maxRequests, 100) : maxRequests;
+
   if (!rateLimitStores.has(prefix)) {
     rateLimitStores.set(prefix, new Map<string, RateLimitRecord>());
   }
@@ -52,17 +58,17 @@ export function checkRateLimit(
     });
     return {
       allowed: true,
-      limit: maxRequests,
-      remaining: maxRequests - 1,
+      limit: effectiveMax,
+      remaining: effectiveMax - 1,
       resetSeconds: Math.ceil(windowMs / 1000),
     };
   }
 
-  if (record.count >= maxRequests) {
+  if (record.count >= effectiveMax) {
     // Limit exceeded
     return {
       allowed: false,
-      limit: maxRequests,
+      limit: effectiveMax,
       remaining: 0,
       resetSeconds: Math.ceil((record.resetAt - now) / 1000),
     };
@@ -72,8 +78,8 @@ export function checkRateLimit(
   record.count += 1;
   return {
     allowed: true,
-    limit: maxRequests,
-    remaining: maxRequests - record.count,
+    limit: effectiveMax,
+    remaining: effectiveMax - record.count,
     resetSeconds: Math.ceil((record.resetAt - now) / 1000),
   };
 }

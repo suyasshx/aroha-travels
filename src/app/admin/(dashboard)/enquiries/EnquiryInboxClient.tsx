@@ -815,22 +815,33 @@ export default function EnquiryInboxClient({
                     <span className="text-xs font-bold uppercase tracking-wider text-[#6a7d61]">
                       Generated Proposal Draft (Real Contracted Tariffs)
                     </span>
-                    <button
-                      onClick={() => handleCopyDraft(selectedEnquiry.aiExtraction!.replyDraft)}
-                      className="px-3 py-1 bg-white border border-[#E9E1D5] hover:bg-[#FAF9F6] text-[#173D32] text-xs rounded-full flex items-center gap-1 font-semibold transition-colors cursor-pointer"
-                    >
-                      {copiedDraft ? (
-                        <>
-                          <Check className="w-3 h-3 text-emerald-600" />
-                          <span>Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3 h-3" />
-                          <span>Copy Draft</span>
-                        </>
-                      )}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/admin/enquiries/${selectedEnquiry.id}/quote`}
+                        target="_blank"
+                        className="px-3 py-1 bg-[#173D32] hover:bg-[#215143] text-[#FAF9F6] text-xs rounded-full flex items-center gap-1 font-semibold transition-colors cursor-pointer shadow-sm"
+                      >
+                        <FileText className="w-3 h-3" />
+                        <span>Print Client Quote</span>
+                      </Link>
+
+                      <button
+                        onClick={() => handleCopyDraft(selectedEnquiry.aiExtraction!.replyDraft)}
+                        className="px-3 py-1 bg-white border border-[#E9E1D5] hover:bg-[#FAF9F6] text-[#173D32] text-xs rounded-full flex items-center gap-1 font-semibold transition-colors cursor-pointer"
+                      >
+                        {copiedDraft ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-600" />
+                            <span>Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3" />
+                            <span>Copy Draft</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="bg-white border border-[#E9E1D5] rounded-2xl p-4 font-mono text-xs text-[#252925] leading-relaxed whitespace-pre-wrap">
