@@ -283,10 +283,9 @@ async function generateTDD() {
 
   y = PAGE_HEIGHT - 150;
 
-  // REPOSITORY & DEPLOYMENT METADATA AT VERY TOP
-  drawBox("PROJECT REPOSITORY & METADATA", [
+  // REPOSITORY & METADATA AT VERY TOP
+  drawBox("PROJECT REPOSITORY & SPECIFICATION METADATA", [
     "GitHub Repository URL: https://github.com/suyasshx/aroha-travels",
-    "Live Deployment URL:   https://aroha-travels.vercel.app (or local http://localhost:3000)",
     "Engineers / Authors:   Senior Full-Stack & Systems Architecture Team",
     "Version / Status:      v1.0.0 Production Quality Ready — 100% Core Requirements Implemented",
     "Verification Date:     November 2026",
