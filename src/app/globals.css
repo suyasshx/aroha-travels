@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+@theme {
+  --font-serif: var(--font-serif), "Playfair Display", Georgia, serif;
+  --font-sans: var(--font-sans), "DM Sans", system-ui, -apple-system, sans-serif;
+  --color-ivory: #FAF9F6;
+  --color-forest: #173D32;
+  --color-forest-light: #215143;
+  --color-forest-dark: #0f2720;
+  --color-sage: #A9B8A2;
+  --color-charcoal: #252925;
+  --color-sand: #E9E1D5;
+  --color-gold: #C5A059;
+}
+
 @layer base {
   :root {
     --ivory: #FAF9F6;
@@ -20,15 +33,15 @@
   }
 
   body {
-    background-color: var(--background);
-    color: var(--foreground);
-    font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+    background-color: #FAF9F6;
+    color: #252925;
+    font-family: var(--font-sans), "DM Sans", system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  h1, h2, h3, .font-serif {
-    font-family: var(--font-serif), Georgia, serif;
+  h1, h2, h3, h4, .font-serif {
+    font-family: var(--font-serif), "Playfair Display", Georgia, serif;
   }
 }
 

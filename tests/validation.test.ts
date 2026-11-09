@@ -99,6 +99,28 @@ describe("5 & 8. Validation Tests (Seasonal Overlaps & Schemas)", () => {
     };
     const invalidResult = PublicEnquirySchema.safeParse(missingConsent);
     expect(invalidResult.success).toBe(false);
+
+    // Empty optional budget, dates, and children
+    const emptyOptionalFields = {
+      customerName: "Priya Nair",
+      email: "priya@example.com",
+      phone: "+91 98450 67890",
+      destination: "Munnar",
+      adults: "2",
+      children: "",
+      budget: "",
+      travelStartDate: "",
+      travelEndDate: "",
+      originalMessage: "Looking for a quiet weekend trip.",
+      dpdpConsent: true,
+    };
+    const emptyFieldsResult = PublicEnquirySchema.safeParse(emptyOptionalFields);
+    expect(emptyFieldsResult.success).toBe(true);
+    if (emptyFieldsResult.success) {
+      expect(emptyFieldsResult.data.budget).toBeNull();
+      expect(emptyFieldsResult.data.children).toBe(0);
+      expect(emptyFieldsResult.data.adults).toBe(2);
+    }
   });
 });
 

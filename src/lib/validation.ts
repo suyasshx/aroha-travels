@@ -64,12 +64,27 @@ export const PublicEnquirySchema = z.object({
   email: z.string().email("Valid email address is required"),
   phone: z.string().min(8, "Phone number must be at least 8 digits").max(20),
   destination: z.string().min(2, "Please specify a preferred destination"),
-  travelStartDate: z.string().optional().nullable(),
-  travelEndDate: z.string().optional().nullable(),
+  travelStartDate: z.preprocess(
+    (val) => (val === "" || val === undefined ? null : val),
+    z.string().nullable().optional()
+  ),
+  travelEndDate: z.preprocess(
+    (val) => (val === "" || val === undefined ? null : val),
+    z.string().nullable().optional()
+  ),
   duration: z.string().optional().nullable(),
-  adults: z.coerce.number().int().min(1, "At least 1 adult is required").max(50),
-  children: z.coerce.number().int().min(0).max(30).default(0),
-  budget: z.coerce.number().positive("Budget must be a positive number").optional().nullable(),
+  adults: z.preprocess(
+    (val) => (val === "" || val === null || val === undefined ? 2 : Number(val)),
+    z.number().int().min(1, "At least 1 adult is required").max(50).default(2)
+  ),
+  children: z.preprocess(
+    (val) => (val === "" || val === null || val === undefined ? 0 : Number(val)),
+    z.number().int().min(0).max(30).default(0)
+  ),
+  budget: z.preprocess(
+    (val) => (val === "" || val === null || val === undefined ? null : Number(val)),
+    z.number().positive("Budget must be a positive number").nullable().optional()
+  ),
   specialRequirements: z.string().max(1000).optional().nullable(),
   originalMessage: z.string().min(5, "Please provide a brief message about your trip plans").max(2000),
   preferredContactMethod: z.enum(["EMAIL", "PHONE", "WHATSAPP"]).default("EMAIL"),

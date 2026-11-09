@@ -274,7 +274,7 @@ export default async function HomePage() {
           )}
 
           {/* Secondary Packages (Asymmetric Multi-Format Layout) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className={`grid grid-cols-1 ${secondaryPackages.length > 2 ? "md:grid-cols-2 lg:grid-cols-3" : "md:grid-cols-2"} gap-8`}>
             {secondaryPackages.map((pkg, idx) => {
               const lowestPrice = pkg.seasonalPrices[0]?.pricePerPerson;
               return (

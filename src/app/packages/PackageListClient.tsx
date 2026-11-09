@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { Search, MapPin, Compass, Filter, ArrowUpRight, ArrowRight, Calendar, Sparkles } from "lucide-react";
 
@@ -46,6 +46,13 @@ export default function PackageListClient({
   const [selectedDuration, setSelectedDuration] = useState<string>("ALL");
   const [selectedBudget, setSelectedBudget] = useState<string>("ALL");
   const [sortBy, setSortBy] = useState<string>("FEATURED");
+
+  // Keep filter in sync when navigated from header with query parameters
+  useEffect(() => {
+    if (initialDest) {
+      setSelectedDestination(initialDest);
+    }
+  }, [initialDest]);
 
   // Filter & Sort Logic
   const filteredPackages = useMemo(() => {
