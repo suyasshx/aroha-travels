@@ -3,12 +3,12 @@
 > **"Discover South India, Beautifully."**
 > Production-grade full-stack web application & bespoke content management system for luxury Kerala & South India tour operations.
 
-[![Next.js](https://img.shields.io/badge/Next.js-15.2.0-black?logo=next.js)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15.5.29-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-blue?logo=postgresql)](https://www.postgresql.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma)](https://www.prisma.io/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
-[![Vitest](https://img.shields.io/badge/Vitest-Automated_Tests-6E9F18?logo=vitest)](https://vitest.dev/)
+[![Vitest](https://img.shields.io/badge/Vitest-26_Passing_Tests-6E9F18?logo=vitest)](https://vitest.dev/)
 
 ---
 
@@ -35,7 +35,7 @@ This platform solves five systemic bottlenecks of traditional travel operations:
 | **Authentication** | Secure HTTP-Only session cookies, JWT, Password hashing using Bcrypt (10 rounds) |
 | **Role-Based Access** | `TRAVELLER` (public catalog & enquiry submission) vs `STAFF_ADMIN` (CMS, CRM, AI approval) |
 | **AI Engine** | Gemini 1.5 Flash structured output + robust deterministic NLP fallback |
-| **Testing** | Vitest 5 (16 automated unit & integration tests covering auth, DB CRUD, schemas, AI fallback) |
+| **Testing** | Vitest 5 (26 automated unit & integration tests covering auth, DB CRUD, schemas, rate limits, AI fallback) |
 
 ---
 
