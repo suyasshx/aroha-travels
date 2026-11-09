@@ -619,6 +619,8 @@ export default async function HomePage() {
                 img: "https://images.unsplash.com/photo-1593693397690-362cb9666fc2?q=80&w=800&auto=format&fit=crop",
                 summary:
                   "Why traditional Ayurvedic vaidyas consider the torrential Karkidakam monsoon the ideal atmospheric humidity for deep cellular tissue absorption and Panchakarma therapies.",
+                relatedPackageSlug: "wayanad-rainforests-heritage-hideaway",
+                relatedPackageTitle: "Wayanad Rainforests (4D)",
               },
               {
                 title: "The High Country: Walking the Historic Tea Ridges of Colonial Munnar",
@@ -628,6 +630,8 @@ export default async function HomePage() {
                 img: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?q=80&w=800&auto=format&fit=crop",
                 summary:
                   "Exploring 130-year-old British planter estates, single-origin orthodox teas, mountain bridle paths, and the mist-laden sanctuary of Anamudi peak.",
+                relatedPackageSlug: "munnar-thekkady-alleppey-houseboat",
+                relatedPackageTitle: "Munnar & Alleppey (6D)",
               },
               {
                 title: "Granite and Ocean Winds: The Architectural Corridors of Rameswaram",
@@ -637,6 +641,8 @@ export default async function HomePage() {
                 img: "https://images.unsplash.com/photo-1582510003544-4d00b7f74220?q=80&w=800&auto=format&fit=crop",
                 summary:
                   "A cultural investigation into the 1,200-meter sculpted corridor of Ramanathaswamy and the haunting ghost town of Dhanushkodi where the Bay of Bengal meets the Indian Ocean.",
+                relatedPackageSlug: "grand-kerala-odyssey-kochi-munnar-alleppey-marari",
+                relatedPackageTitle: "Grand Kerala Odyssey (8D)",
               },
             ].map((blog, i) => (
               <article
@@ -662,9 +668,23 @@ export default async function HomePage() {
                       {blog.title}
                     </h3>
 
-                    <p className="text-xs text-[#252925]/75 leading-relaxed font-light">
+                    <p className="text-xs text-[#252925]/75 leading-relaxed font-light mb-5">
                       {blog.summary}
                     </p>
+
+                    {/* Blog-to-Package Integration (Solves brief problem: Blogs disconnected from packages) */}
+                    <div className="pt-3 border-t border-[#E9E1D5]/60">
+                      <span className="text-[9px] uppercase tracking-wider font-mono text-[#6a7d61] block mb-1">
+                        CORRESPONDING EXPEDITION
+                      </span>
+                      <Link
+                        href={`/packages/${blog.relatedPackageSlug}`}
+                        className="text-xs font-semibold text-[#173D32] hover:text-[#215143] inline-flex items-center gap-1.5 group/link"
+                      >
+                        <span>{blog.relatedPackageTitle}</span>
+                        <ArrowUpRight className="w-3.5 h-3.5 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
+                      </Link>
+                    </div>
                   </div>
                 </div>
 
@@ -672,9 +692,12 @@ export default async function HomePage() {
                   <span className="text-[10px] font-mono text-[#6a7d61]">
                     PUBLISHED {blog.date}
                   </span>
-                  <span className="text-[#173D32] font-semibold flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                    Read Essay →
-                  </span>
+                  <Link
+                    href={`/packages/${blog.relatedPackageSlug}`}
+                    className="text-[#173D32] font-semibold flex items-center gap-1 group-hover:translate-x-1 transition-transform"
+                  >
+                    View Expedition →
+                  </Link>
                 </div>
               </article>
             ))}
