@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireStaffAdmin } from "@/lib/auth";
 import { processEnquiryWithAI } from "@/lib/ai";
+import { safeErrorResponse } from "@/lib/security";
 
 interface RouteProps {
   params: Promise<{ id: string }>;
@@ -57,9 +58,7 @@ export async function POST(req: NextRequest, props: RouteProps) {
     });
 
     return NextResponse.json({ success: true, aiExtraction: updatedAi });
-  } catch (error: any) {
-    console.error("Regenerate AI error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return safeErrorResponse(error, "Failed to regenerate AI analysis.");
   }
 }
-

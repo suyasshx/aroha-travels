@@ -2,19 +2,52 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { PublicEnquirySchema } from "@/lib/validation";
 import { processEnquiryWithAI } from "@/lib/ai";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { sanitizeText } from "@/lib/sanitize";
+import { safeErrorResponse } from "@/lib/security";
 import { EnquiryStatus } from "@prisma/client";
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+
+    // 1. Rate Limiting: Max 5 submissions per 10 minutes per IP address
+    const rateLimit = checkRateLimit(ip, "public_enquiry", 5, 10 * 60 * 1000);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Too many enquiry submissions from your network. Please wait ${rateLimit.resetSeconds} seconds before submitting again.`,
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimit.resetSeconds),
+          },
+        }
+      );
+    }
+
     const body = await req.json();
 
-    // 1. Zod Validation
-    const validation = PublicEnquirySchema.safeParse(body);
+    // 2. Input Sanitization against XSS and script injection
+    const sanitizedBody = {
+      ...body,
+      customerName: sanitizeText(body?.customerName || ""),
+      destination: sanitizeText(body?.destination || ""),
+      specialRequirements: body?.specialRequirements ? sanitizeText(body.specialRequirements) : null,
+      originalMessage: sanitizeText(body?.originalMessage || ""),
+      phone: sanitizeText(body?.phone || ""),
+      email: sanitizeText(body?.email || "").toLowerCase(),
+    };
+
+    // 3. Zod Schema Validation
+    const validation = PublicEnquirySchema.safeParse(sanitizedBody);
     if (!validation.success) {
       return NextResponse.json(
         {
           success: false,
-          error: "Validation failed",
+          error: "Validation failed. Please verify the submitted details.",
           details: validation.error.flatten().fieldErrors,
         },
         { status: 400 }
@@ -23,12 +56,12 @@ export async function POST(req: NextRequest) {
 
     const data = validation.data;
 
-    // 2. Generate unique enquiry number
+    // 4. Generate unique enquiry number
     const count = await prisma.enquiry.count();
     const year = new Date().getFullYear();
     const enquiryNumber = `ENQ-${year}-${String(count + 1).padStart(3, "0")}`;
 
-    // 3. Save Enquiry in PostgreSQL
+    // 5. Save Enquiry in PostgreSQL
     const enquiry = await prisma.enquiry.create({
       data: {
         enquiryNumber,
@@ -38,7 +71,7 @@ export async function POST(req: NextRequest) {
         destination: data.destination,
         travelStartDate: data.travelStartDate ? new Date(data.travelStartDate) : null,
         travelEndDate: data.travelEndDate ? new Date(data.travelEndDate) : null,
-        duration: data.duration || null,
+        duration: data.duration ? sanitizeText(data.duration) : null,
         adults: data.adults,
         children: data.children,
         budget: data.budget || null,
@@ -51,7 +84,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 4. Trigger AI Assistant extraction and recommendation engine
+    // 6. Trigger AI Assistant extraction and recommendation engine
     try {
       const aiResult = await processEnquiryWithAI(data.customerName, data.originalMessage);
       
@@ -67,21 +100,20 @@ export async function POST(req: NextRequest) {
         },
       });
     } catch (aiErr) {
-      console.error("AI extraction error during enquiry creation:", aiErr);
-      // Non-blocking: Enquiry is still safely persisted in DB
+      console.error("[SECURITY LOG - AI EXTRACTION NON-FATAL ERROR]:", aiErr);
     }
 
-    // 5. Log activity
+    // 7. Log activity
     await prisma.activityLog.create({
       data: {
         action: "ENQUIRY_RECEIVED",
         entityType: "ENQUIRY",
         entityId: enquiry.enquiryNumber,
-        details: `Public enquiry from ${data.customerName} for ${data.destination} (${data.adults} adults).`,
+        details: `Public enquiry from ${data.customerName} for ${data.destination} (${data.adults} adults) from IP ${ip}.`,
       },
     });
 
-    // 6. Return response with acknowledgement template
+    // 8. Return response with acknowledgement template
     return NextResponse.json({
       success: true,
       enquiryNumber: enquiry.enquiryNumber,
@@ -94,15 +126,10 @@ export async function POST(req: NextRequest) {
         disclaimer: "This acknowledgement confirms your request has been logged in our secure database. No external promotional dispatch has occurred.",
       },
     });
-  } catch (error: any) {
-    console.error("Enquiry API error:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "An unexpected error occurred while saving your enquiry. Please try again or reach us at journeys@aroha-travels.com.",
-      },
-      { status: 500 }
+  } catch (error: unknown) {
+    return safeErrorResponse(
+      error,
+      "An unexpected error occurred while saving your enquiry. Please try again or reach us at journeys@aroha-travels.com."
     );
   }
 }
-

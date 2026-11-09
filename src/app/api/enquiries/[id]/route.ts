@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireStaffAdmin } from "@/lib/auth";
+import { sanitizeText, sanitizeObject } from "@/lib/sanitize";
+import { safeErrorResponse } from "@/lib/security";
 import { EnquiryStatus } from "@prisma/client";
 
 interface RouteProps {
   params: Promise<{ id: string }>;
 }
 
-// GET /api/enquiries/[id]
+// GET /api/enquiries/[id] (staff admin only)
 export async function GET(req: NextRequest, props: RouteProps) {
   try {
     await requireStaffAdmin();
@@ -26,12 +28,12 @@ export async function GET(req: NextRequest, props: RouteProps) {
     }
 
     return NextResponse.json({ success: true, enquiry });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 401 });
+  } catch (error: unknown) {
+    return safeErrorResponse(error, "Failed to retrieve enquiry.", 401);
   }
 }
 
-// PATCH /api/enquiries/[id] - update status, assignment, or edit/approve AI extraction
+// PATCH /api/enquiries/[id] - update status, assignment, or edit/approve AI extraction (staff admin only)
 export async function PATCH(req: NextRequest, props: RouteProps) {
   try {
     const session = await requireStaffAdmin();
@@ -49,20 +51,23 @@ export async function PATCH(req: NextRequest, props: RouteProps) {
 
     const {
       status,
-      assignedTo,
-      priority,
+      assignedTo: rawAssigned,
+      priority: rawPriority,
       aiExtractionApproved,
       editedExtractedData,
       editedReplyDraft,
     } = body;
 
+    const assignedTo = rawAssigned !== undefined ? (rawAssigned ? sanitizeText(rawAssigned) : null) : undefined;
+    const priority = rawPriority ? sanitizeText(rawPriority) : undefined;
+
     // Update enquiry fields
-    const updatedEnquiry = await prisma.enquiry.update({
+    await prisma.enquiry.update({
       where: { id },
       data: {
         status: status ? (status as EnquiryStatus) : undefined,
-        assignedTo: assignedTo !== undefined ? assignedTo : undefined,
-        priority: priority || undefined,
+        assignedTo,
+        priority,
       },
     });
 
@@ -72,8 +77,8 @@ export async function PATCH(req: NextRequest, props: RouteProps) {
         where: { id: existing.aiExtraction.id },
         data: {
           approved: aiExtractionApproved !== undefined ? aiExtractionApproved : existing.aiExtraction.approved,
-          extractedData: editedExtractedData || existing.aiExtraction.extractedData,
-          replyDraft: editedReplyDraft || existing.aiExtraction.replyDraft,
+          extractedData: editedExtractedData ? sanitizeObject(editedExtractedData) : existing.aiExtraction.extractedData,
+          replyDraft: editedReplyDraft ? sanitizeText(editedReplyDraft) : existing.aiExtraction.replyDraft,
         },
       });
     }
@@ -114,9 +119,7 @@ export async function PATCH(req: NextRequest, props: RouteProps) {
     });
 
     return NextResponse.json({ success: true, enquiry: result });
-  } catch (error: any) {
-    console.error("Enquiry PATCH error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return safeErrorResponse(error, "Failed to update enquiry.");
   }
 }
-

@@ -1,53 +1,69 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyPassword, signToken, AUTH_COOKIE_NAME } from "@/lib/auth";
+import { verifyPassword, signToken, AUTH_COOKIE_NAME, hashPassword } from "@/lib/auth";
 import { AdminLoginSchema } from "@/lib/validation";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { sanitizeText } from "@/lib/sanitize";
 import { UserRole } from "@prisma/client";
+
+// Dummy hash for constant-time comparison when user not found (prevents timing side-channel attacks)
+const DUMMY_HASH = "$2a$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUU1234567890";
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+
+    // 1. Rate Limiting: Max 5 attempts per 15 minutes per IP
+    const rateLimit = checkRateLimit(ip, "login", 5, 15 * 60 * 1000);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Too many login attempts. For security, your IP has been throttled. Please try again in ${rateLimit.resetSeconds} seconds.`,
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimit.resetSeconds),
+          },
+        }
+      );
+    }
+
     const body = await req.json();
-    const validation = AdminLoginSchema.safeParse(body);
+    const sanitizedEmail = sanitizeText(body?.email || "").toLowerCase();
+    const rawPassword = body?.password || "";
+
+    const validation = AdminLoginSchema.safeParse({
+      email: sanitizedEmail,
+      password: rawPassword,
+    });
 
     if (!validation.success) {
       return NextResponse.json(
-        { success: false, error: "Please provide a valid email and password." },
+        { success: false, error: "Please enter a valid email and password." },
         { status: 400 }
       );
     }
 
-    const { email, password } = validation.data;
-
-    // Find staff user
+    // 2. Lookup staff user
     const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() },
+      where: { email: sanitizedEmail },
     });
 
-    if (!user) {
+    // Constant-time check: run bcrypt compare even if user doesn't exist
+    const hashToVerify = user?.passwordHash || DUMMY_HASH;
+    const isPasswordValid = await verifyPassword(rawPassword, hashToVerify);
+
+    // If user not found, not staff, or password invalid, return identical generic error
+    if (!user || user.role !== UserRole.STAFF_ADMIN || !isPasswordValid) {
       return NextResponse.json(
-        { success: false, error: "Invalid credentials. Please verify your staff email and password." },
+        { success: false, error: "Invalid email or password." },
         { status: 401 }
       );
     }
 
-    // Check staff role
-    if (user.role !== UserRole.STAFF_ADMIN) {
-      return NextResponse.json(
-        { success: false, error: "Access denied. Only authorized staff members can enter the admin portal." },
-        { status: 403 }
-      );
-    }
-
-    // Verify password hash
-    const isValid = await verifyPassword(password, user.passwordHash);
-    if (!isValid) {
-      return NextResponse.json(
-        { success: false, error: "Invalid credentials. Please verify your staff email and password." },
-        { status: 401 }
-      );
-    }
-
-    // Sign JWT
+    // 3. Sign secure JWT
     const token = signToken({
       id: user.id,
       name: user.name,
@@ -55,15 +71,15 @@ export async function POST(req: NextRequest) {
       role: user.role,
     });
 
-    // Log Activity
+    // 4. Log Security Activity
     await prisma.activityLog.create({
       data: {
         userId: user.id,
         userName: user.name,
-        action: "STAFF_LOGIN",
+        action: "STAFF_LOGIN_SUCCESS",
         entityType: "USER",
         entityId: user.id,
-        details: `Staff member ${user.name} logged in successfully.`,
+        details: `Successful staff authentication from IP ${ip}.`,
       },
     });
 
@@ -77,7 +93,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Set secure httpOnly cookie
+    // Set secure HTTP-only cookie
     response.cookies.set({
       name: AUTH_COOKIE_NAME,
       value: token,
@@ -89,12 +105,11 @@ export async function POST(req: NextRequest) {
     });
 
     return response;
-  } catch (error: any) {
-    console.error("Login API error:", error);
+  } catch (error: unknown) {
+    console.error("[AUTH ERROR]:", error);
     return NextResponse.json(
-      { success: false, error: "An unexpected server error occurred during authentication." },
+      { success: false, error: "An unexpected authentication error occurred." },
       { status: 500 }
     );
   }
 }
-

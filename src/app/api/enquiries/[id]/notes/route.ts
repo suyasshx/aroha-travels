@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireStaffAdmin } from "@/lib/auth";
+import { sanitizeText } from "@/lib/sanitize";
+import { safeErrorResponse } from "@/lib/security";
 
 interface RouteProps {
   params: Promise<{ id: string }>;
@@ -12,7 +14,9 @@ export async function POST(req: NextRequest, props: RouteProps) {
     const { id } = await props.params;
     const body = await req.json();
 
-    const { note } = body;
+    const rawNote = body?.note || "";
+    const note = sanitizeText(rawNote);
+
     if (!note || note.trim().length === 0) {
       return NextResponse.json({ success: false, error: "Note cannot be empty." }, { status: 400 });
     }
@@ -38,8 +42,7 @@ export async function POST(req: NextRequest, props: RouteProps) {
     });
 
     return NextResponse.json({ success: true, note: createdNote });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return safeErrorResponse(error, "Failed to save note.", 500);
   }
 }
-

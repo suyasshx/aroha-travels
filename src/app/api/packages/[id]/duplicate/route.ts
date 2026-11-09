@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireStaffAdmin } from "@/lib/auth";
+import { safeErrorResponse } from "@/lib/security";
 import { PackageStatus } from "@prisma/client";
 
 interface RouteProps {
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest, props: RouteProps) {
         destination: sourcePkg.destination,
         duration: sourcePkg.duration,
         description: sourcePkg.description,
-        status: PackageStatus.DRAFT, // Always draft on duplication
+        status: PackageStatus.DRAFT,
         heroImage: sourcePkg.heroImage,
         featured: false,
         bestTimeToVisit: sourcePkg.bestTimeToVisit,
@@ -105,9 +106,7 @@ export async function POST(req: NextRequest, props: RouteProps) {
     });
 
     return NextResponse.json({ success: true, package: duplicated });
-  } catch (error: any) {
-    console.error("Duplicate package error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return safeErrorResponse(error, "Failed to duplicate package.");
   }
 }
-

@@ -143,3 +143,4 @@ npx vitest run
 - **Database Connection Refused**: Verify that PostgreSQL is running and accepting TCP/IP connections on the configured port.
 - **Prisma Client Out of Sync**: Run `npx prisma generate` whenever schema definitions are adjusted.
 - **Port Conflicts**: Next.js defaults to port 3000; specify alternative ports using `PORT=3001 npm run dev`.
+

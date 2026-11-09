@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireStaffAdmin } from "@/lib/auth";
 import { validateSeasonalPeriods } from "@/lib/validation";
+import { sanitizeText } from "@/lib/sanitize";
+import { safeErrorResponse } from "@/lib/security";
 import { PackageStatus } from "@prisma/client";
 
-// GET /api/packages - list all packages (admin view)
+// GET /api/packages - list all packages (staff admin view only)
 export async function GET() {
   try {
     await requireStaffAdmin();
@@ -17,36 +19,47 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
     return NextResponse.json({ success: true, packages });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 401 });
+  } catch (error: unknown) {
+    return safeErrorResponse(error, "Failed to retrieve packages.", 401);
   }
 }
 
-// POST /api/packages - create new package
+// POST /api/packages - create new package (staff admin only)
 export async function POST(req: NextRequest) {
   try {
     const session = await requireStaffAdmin();
     const body = await req.json();
 
     const {
-      packageCode,
-      slug,
-      title,
-      destination,
-      duration,
-      description,
+      packageCode: rawCode,
+      slug: rawSlug,
+      title: rawTitle,
+      destination: rawDest,
+      duration: rawDuration,
+      description: rawDesc,
       status = PackageStatus.DRAFT,
-      heroImage,
+      heroImage: rawHero,
       featured = false,
-      bestTimeToVisit,
+      bestTimeToVisit: rawBestTime,
       inclusions = [],
       exclusions = [],
       gallery = [],
       seasonalPrices = [],
       itineraryDays = [],
       hotels = [],
-      changeSummary = "Initial package creation",
+      changeSummary: rawSummary = "Initial package creation",
     } = body;
+
+    // Sanitize text inputs
+    const packageCode = sanitizeText(rawCode).toUpperCase();
+    const slug = sanitizeText(rawSlug).toLowerCase();
+    const title = sanitizeText(rawTitle);
+    const destination = sanitizeText(rawDest);
+    const duration = sanitizeText(rawDuration);
+    const description = sanitizeText(rawDesc);
+    const heroImage = sanitizeText(rawHero);
+    const bestTimeToVisit = rawBestTime ? sanitizeText(rawBestTime) : null;
+    const changeSummary = sanitizeText(rawSummary);
 
     // Check unique constraints
     const existingCode = await prisma.package.findUnique({ where: { packageCode } });
@@ -79,37 +92,37 @@ export async function POST(req: NextRequest) {
         status,
         heroImage,
         featured,
-        bestTimeToVisit: bestTimeToVisit || null,
-        inclusions,
-        exclusions,
-        gallery,
+        bestTimeToVisit,
+        inclusions: inclusions.map((i: string) => sanitizeText(i)),
+        exclusions: exclusions.map((e: string) => sanitizeText(e)),
+        gallery: gallery.map((g: string) => sanitizeText(g)),
         seasonalPrices: {
           create: seasonalPrices.map((sp: any) => ({
-            seasonName: sp.seasonName,
+            seasonName: sanitizeText(sp.seasonName),
             startDate: new Date(sp.startDate),
             endDate: new Date(sp.endDate),
             pricePerPerson: Number(sp.pricePerPerson),
-            hotelCategory: sp.hotelCategory || "4-Star Deluxe",
-            gstDetails: sp.gstDetails || "5% GST applicable",
-            sharingBasis: sp.sharingBasis || "Twin Sharing Basis",
+            hotelCategory: sanitizeText(sp.hotelCategory || "4-Star Deluxe"),
+            gstDetails: sanitizeText(sp.gstDetails || "5% GST applicable"),
+            sharingBasis: sanitizeText(sp.sharingBasis || "Twin Sharing Basis"),
           })),
         },
         itineraryDays: {
           create: itineraryDays.map((day: any, idx: number) => ({
             dayNumber: day.dayNumber || idx + 1,
-            title: day.title,
-            description: day.description,
-            activities: Array.isArray(day.activities) ? day.activities : [],
-            stay: day.stay || null,
-            meals: day.meals || null,
+            title: sanitizeText(day.title),
+            description: sanitizeText(day.description),
+            activities: Array.isArray(day.activities) ? day.activities.map((a: string) => sanitizeText(a)) : [],
+            stay: day.stay ? sanitizeText(day.stay) : null,
+            meals: day.meals ? sanitizeText(day.meals) : null,
           })),
         },
         hotels: {
           create: hotels.map((h: any) => ({
-            name: h.name,
-            category: h.category,
-            location: h.location,
-            roomType: h.roomType || null,
+            name: sanitizeText(h.name),
+            category: sanitizeText(h.category),
+            location: sanitizeText(h.location),
+            roomType: h.roomType ? sanitizeText(h.roomType) : null,
           })),
         },
       },
@@ -148,9 +161,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, package: newPackage });
-  } catch (error: any) {
-    console.error("Create package error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return safeErrorResponse(error, "Failed to create package.");
   }
 }
-

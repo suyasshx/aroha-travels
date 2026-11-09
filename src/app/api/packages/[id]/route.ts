@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireStaffAdmin } from "@/lib/auth";
 import { validateSeasonalPeriods } from "@/lib/validation";
+import { sanitizeText } from "@/lib/sanitize";
+import { safeErrorResponse } from "@/lib/security";
 import { PackageStatus } from "@prisma/client";
 
 interface RouteProps {
   params: Promise<{ id: string }>;
 }
 
-// GET /api/packages/[id] - fetch single package with all relations & versions
+// GET /api/packages/[id] - fetch single package (staff admin only)
 export async function GET(req: NextRequest, props: RouteProps) {
   try {
     await requireStaffAdmin();
@@ -29,12 +31,12 @@ export async function GET(req: NextRequest, props: RouteProps) {
     }
 
     return NextResponse.json({ success: true, package: pkg });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 401 });
+  } catch (error: unknown) {
+    return safeErrorResponse(error, "Failed to retrieve package.", 401);
   }
 }
 
-// PUT /api/packages/[id] - update package & record version history
+// PUT /api/packages/[id] - update package & record version history (staff admin only)
 export async function PUT(req: NextRequest, props: RouteProps) {
   try {
     const session = await requireStaffAdmin();
@@ -53,24 +55,35 @@ export async function PUT(req: NextRequest, props: RouteProps) {
     }
 
     const {
-      packageCode,
-      slug,
-      title,
-      destination,
-      duration,
-      description,
+      packageCode: rawCode,
+      slug: rawSlug,
+      title: rawTitle,
+      destination: rawDest,
+      duration: rawDuration,
+      description: rawDesc,
       status,
-      heroImage,
+      heroImage: rawHero,
       featured,
-      bestTimeToVisit,
+      bestTimeToVisit: rawBestTime,
       inclusions,
       exclusions,
       gallery,
       seasonalPrices,
       itineraryDays,
       hotels,
-      changeSummary = "Updated package details and pricing",
+      changeSummary: rawSummary = "Updated package details and pricing",
     } = body;
+
+    // Sanitize string inputs
+    const packageCode = rawCode ? sanitizeText(rawCode).toUpperCase() : existingPkg.packageCode;
+    const slug = rawSlug ? sanitizeText(rawSlug).toLowerCase() : existingPkg.slug;
+    const title = rawTitle ? sanitizeText(rawTitle) : existingPkg.title;
+    const destination = rawDest ? sanitizeText(rawDest) : existingPkg.destination;
+    const duration = rawDuration ? sanitizeText(rawDuration) : existingPkg.duration;
+    const description = rawDesc ? sanitizeText(rawDesc) : existingPkg.description;
+    const heroImage = rawHero ? sanitizeText(rawHero) : existingPkg.heroImage;
+    const bestTimeToVisit = rawBestTime !== undefined ? (rawBestTime ? sanitizeText(rawBestTime) : null) : existingPkg.bestTimeToVisit;
+    const changeSummary = sanitizeText(rawSummary);
 
     // Validate seasonal pricing overlap if seasonalPrices provided
     if (seasonalPrices && seasonalPrices.length > 0) {
@@ -97,29 +110,29 @@ export async function PUT(req: NextRequest, props: RouteProps) {
       const updatedPackage = await tx.package.update({
         where: { id },
         data: {
-          packageCode: packageCode || existingPkg.packageCode,
-          slug: slug || existingPkg.slug,
-          title: title || existingPkg.title,
-          destination: destination || existingPkg.destination,
-          duration: duration || existingPkg.duration,
-          description: description || existingPkg.description,
+          packageCode,
+          slug,
+          title,
+          destination,
+          duration,
+          description,
           status: status || existingPkg.status,
-          heroImage: heroImage || existingPkg.heroImage,
+          heroImage,
           featured: featured !== undefined ? featured : existingPkg.featured,
-          bestTimeToVisit: bestTimeToVisit !== undefined ? bestTimeToVisit : existingPkg.bestTimeToVisit,
-          inclusions: inclusions !== undefined ? inclusions : existingPkg.inclusions,
-          exclusions: exclusions !== undefined ? exclusions : existingPkg.exclusions,
-          gallery: gallery !== undefined ? gallery : existingPkg.gallery,
+          bestTimeToVisit,
+          inclusions: inclusions ? inclusions.map((i: string) => sanitizeText(i)) : existingPkg.inclusions,
+          exclusions: exclusions ? exclusions.map((e: string) => sanitizeText(e)) : existingPkg.exclusions,
+          gallery: gallery ? gallery.map((g: string) => sanitizeText(g)) : existingPkg.gallery,
           seasonalPrices: seasonalPrices
             ? {
                 create: seasonalPrices.map((sp: any) => ({
-                  seasonName: sp.seasonName,
+                  seasonName: sanitizeText(sp.seasonName),
                   startDate: new Date(sp.startDate),
                   endDate: new Date(sp.endDate),
                   pricePerPerson: Number(sp.pricePerPerson),
-                  hotelCategory: sp.hotelCategory || "4-Star",
-                  gstDetails: sp.gstDetails || "5% GST applicable",
-                  sharingBasis: sp.sharingBasis || "Twin Sharing Basis",
+                  hotelCategory: sanitizeText(sp.hotelCategory || "4-Star"),
+                  gstDetails: sanitizeText(sp.gstDetails || "5% GST applicable"),
+                  sharingBasis: sanitizeText(sp.sharingBasis || "Twin Sharing Basis"),
                 })),
               }
             : undefined,
@@ -127,21 +140,21 @@ export async function PUT(req: NextRequest, props: RouteProps) {
             ? {
                 create: itineraryDays.map((day: any, idx: number) => ({
                   dayNumber: day.dayNumber || idx + 1,
-                  title: day.title,
-                  description: day.description,
-                  activities: Array.isArray(day.activities) ? day.activities : [],
-                  stay: day.stay || null,
-                  meals: day.meals || null,
+                  title: sanitizeText(day.title),
+                  description: sanitizeText(day.description),
+                  activities: Array.isArray(day.activities) ? day.activities.map((a: string) => sanitizeText(a)) : [],
+                  stay: day.stay ? sanitizeText(day.stay) : null,
+                  meals: day.meals ? sanitizeText(day.meals) : null,
                 })),
               }
             : undefined,
           hotels: hotels
             ? {
                 create: hotels.map((h: any) => ({
-                  name: h.name,
-                  category: h.category,
-                  location: h.location,
-                  roomType: h.roomType || null,
+                  name: sanitizeText(h.name),
+                  category: sanitizeText(h.category),
+                  location: sanitizeText(h.location),
+                  roomType: h.roomType ? sanitizeText(h.roomType) : null,
                 })),
               }
             : undefined,
@@ -191,13 +204,12 @@ export async function PUT(req: NextRequest, props: RouteProps) {
     });
 
     return NextResponse.json({ success: true, package: updated });
-  } catch (error: any) {
-    console.error("Update package error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return safeErrorResponse(error, "Failed to update package.");
   }
 }
 
-// DELETE /api/packages/[id] - delete or archive package
+// DELETE /api/packages/[id] - delete or archive package (staff admin only)
 export async function DELETE(req: NextRequest, props: RouteProps) {
   try {
     const session = await requireStaffAdmin();
@@ -208,7 +220,6 @@ export async function DELETE(req: NextRequest, props: RouteProps) {
       return NextResponse.json({ success: false, error: "Package not found" }, { status: 404 });
     }
 
-    // Check query params: if ?archive=true, set status to ARCHIVED, otherwise delete
     const url = new URL(req.url);
     const archiveOnly = url.searchParams.get("archive") === "true";
 
@@ -242,9 +253,7 @@ export async function DELETE(req: NextRequest, props: RouteProps) {
       });
       return NextResponse.json({ success: true, message: "Package permanently removed" });
     }
-  } catch (error: any) {
-    console.error("Delete package error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return safeErrorResponse(error, "Failed to delete package.");
   }
 }
-
